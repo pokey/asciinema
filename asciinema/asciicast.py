@@ -4,13 +4,13 @@ import json.decoder
 import urllib.request
 import urllib.error
 import html.parser
-from .stdout import Stdout
 
 
 class Asciicast:
 
-    def __init__(self, stdout, width, height, duration, command=None, title=None, term=None, shell=None):
-        self.stdout = stdout
+    def __init__(self, pipe, width, height, duration, command=None, title=None,
+                 term=None, shell=None):
+        self.pipe = pipe
         self.width = width
         self.height = height
         self.duration = duration
@@ -20,10 +20,13 @@ class Asciicast:
         self.shell = shell
 
     def save(self, path):
-        stdout = list(map(lambda frame: [round(frame[0], 6), frame[1]], self.stdout.frames))
+        frames = [
+            [round(delay, 6), text, fdno]
+            for delay, text, fdno in self.pipe.frames
+        ]
         duration = round(self.duration, 6)
         attrs = {
-            "version": 1,
+            "version": 2,
             "width": self.width,
             "height": self.height,
             "duration": duration,
@@ -33,7 +36,7 @@ class Asciicast:
                 "TERM": self.term,
                 "SHELL": self.shell
             },
-            "stdout": stdout
+            "frames": frames,
         }
 
         with open(path, "w") as f:
@@ -105,7 +108,7 @@ def load(filename):
             raise LoadError('unsupported asciicast format')
 
         return Asciicast(
-            attrs['stdout'],
+            attrs['pipe'],
             attrs['width'],
             attrs['height'],
             attrs['duration'],

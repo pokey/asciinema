@@ -42,7 +42,7 @@ class PtyRecorder:
             '''Handles new data on child process stdout.'''
 
             _write_stdout(data)
-            output.write(data)
+            output.write_stdout(data)
 
         def _write_master(data):
             '''Writes to the child process from its controlling terminal.'''
@@ -54,6 +54,7 @@ class PtyRecorder:
         def _handle_stdin_read(data):
             '''Handles new data on child process stdin.'''
 
+            output.write_stdin(data)
             _write_master(data)
 
         def _signals(signal_list):
