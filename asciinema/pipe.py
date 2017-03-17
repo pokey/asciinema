@@ -2,9 +2,15 @@ import time
 import codecs
 import ujson
 
+from asciinema.compress import CompressThread
+
 STDIN = 0
 STDOUT = 1
 MAX_LINES_IN_FILE = 30000
+
+
+def get_file_path(dir, idx):
+    return dir / 'log_{}.json'.format(idx)
 
 
 class Pipe:
@@ -13,11 +19,14 @@ class Pipe:
         dir.mkdir(parents=True, exist_ok=True)
         self.dir = dir
         self.out_file_idx = 0
-        out_file_path = (dir / 'log_{}'.format(self.out_file_idx))
-        while out_file_path.exists():
+        self.out_file_path = get_file_path(self.dir, self.out_file_idx)
+        while (self.out_file_path.exists() or
+               self.out_file_path.with_suffix('.json.gz').exists()):
             self.out_file_idx += 1
-            out_file_path = (dir / 'log_{}'.format(self.out_file_idx))
-        self.out_file = out_file_path.open('w')
+            self.out_file_path = get_file_path(self.dir, self.out_file_idx)
+        self.out_file = self.out_file_path.open('w')
+        self.out_file.write('[\n')
+        self.delim = ''
         self.frames = []
         self.max_wait = max_wait
         self.last_write_time = time.time()
@@ -37,13 +46,18 @@ class Pipe:
             delay = self._increment_elapsed_time()
             frame = [delay, text, fdno]
             if self.lines_since_rotate > MAX_LINES_IN_FILE:
+                self.out_file.write('\n]\n')
                 self.out_file.close()
+                CompressThread(self.out_file_path).start()
                 self.out_file_idx += 1
-                out_file_path = (self.dir / 'log_{}'.format(self.out_file_idx))
-                self.out_file = out_file_path.open('w')
+                self.out_file_path = get_file_path(self.dir, self.out_file_idx)
+                self.out_file = self.out_file_path.open('w')
                 self.lines_since_rotate = 0
+                self.out_file.write('[\n')
+                self.delim = ''
+            self.out_file.write(self.delim)
+            self.delim = ',\n'
             self.out_file.write(ujson.dumps(frame, ensure_ascii=False))
-            self.out_file.write(',\n')
             self.out_file.flush()
             self.lines_since_rotate += 1
 
