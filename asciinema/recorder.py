@@ -18,7 +18,7 @@ class Recorder:
     def record(self, dir, user_command, title, max_wait):
         command = user_command or self.env.get('SHELL') or 'sh'
         dir = Path(dir)
-        pipe = Pipe(dir, max_wait)
+        pipe = Pipe(dir)
         env = os.environ.copy()
         env['ASCIINEMA_REC'] = '1'
 
@@ -29,7 +29,6 @@ class Recorder:
             pipe,
             width,
             height,
-            pipe.duration,
             command=user_command,
             title=title,
             term=self.env.get('TERM'),

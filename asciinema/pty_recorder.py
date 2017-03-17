@@ -1,16 +1,13 @@
+import array
 import errno
+import fcntl
 import os
 import pty
-import signal
-import tty
-import array
-import fcntl
-import termios
 import select
-import io
-import shlex
-import sys
+import signal
 import struct
+import termios
+import tty
 
 
 class PtyRecorder:
@@ -24,7 +21,8 @@ class PtyRecorder:
             of our own controlling terminal.
             '''
 
-            # Get the terminal size of the real terminal, set it on the pseudoterminal.
+            # Get the terminal size of the real terminal, set it on the
+            # pseudoterminal.
             if os.isatty(pty.STDOUT_FILENO):
                 buf = array.array('h', [0, 0, 0, 0])
                 fcntl.ioctl(pty.STDOUT_FILENO, termios.TIOCGWINSZ, buf, True)
@@ -34,7 +32,9 @@ class PtyRecorder:
                 fcntl.ioctl(master_fd, termios.TIOCSWINSZ, buf)
 
         def _write_stdout(data):
-            '''Writes to stdout as if the child process had written the data.'''
+            '''
+            Writes to stdout as if the child process had written the data.
+            '''
 
             os.write(pty.STDOUT_FILENO, data)
 
@@ -64,7 +64,8 @@ class PtyRecorder:
             return old_handlers
 
         def _copy(signal_fd):
-            '''Main select loop.
+            '''
+            Main select loop.
 
             Passes control to _master_read() or _stdin_read()
             when new data arrives.
@@ -101,7 +102,12 @@ class PtyRecorder:
                     if data:
                         signals = struct.unpack('%uB' % len(data), data)
                         for sig in signals:
-                            if sig in [signal.SIGCHLD, signal.SIGHUP, signal.SIGTERM, signal.SIGQUIT]:
+                            if sig in [
+                                signal.SIGCHLD,
+                                signal.SIGHUP,
+                                signal.SIGTERM,
+                                signal.SIGQUIT
+                            ]:
                                 os.close(master_fd)
                                 return
                             elif sig == signal.SIGWINCH:
@@ -120,11 +126,13 @@ class PtyRecorder:
         signal.set_wakeup_fd(pipe_w)
 
         old_handlers = _signals(map(lambda s: (s, lambda signal, frame: None),
-                                    [signal.SIGWINCH,
-                                     signal.SIGCHLD,
-                                     signal.SIGHUP,
-                                     signal.SIGTERM,
-                                     signal.SIGQUIT]))
+                                    [
+                                        signal.SIGWINCH,
+                                        signal.SIGCHLD,
+                                        signal.SIGHUP,
+                                        signal.SIGTERM,
+                                        signal.SIGQUIT
+                                    ]))
 
         try:
             mode = tty.tcgetattr(pty.STDIN_FILENO)

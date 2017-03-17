@@ -8,35 +8,27 @@ import html.parser
 
 class Asciicast:
 
-    def __init__(self, pipe, width, height, duration, command=None, title=None,
+    def __init__(self, pipe, width, height, command=None, title=None,
                  term=None, shell=None):
         self.pipe = pipe
         self.width = width
         self.height = height
-        self.duration = duration
         self.command = command
         self.title = title
         self.term = term
         self.shell = shell
 
     def save(self, path):
-        frames = [
-            [round(delay, 6), text, fdno]
-            for delay, text, fdno in self.pipe.frames
-        ]
-        duration = round(self.duration, 6)
         attrs = {
             "version": 2,
             "width": self.width,
             "height": self.height,
-            "duration": duration,
             "command": self.command,
             "title": self.title,
             "env": {
                 "TERM": self.term,
                 "SHELL": self.shell
             },
-            "frames": frames,
         }
 
         with open(path, "w") as f:
